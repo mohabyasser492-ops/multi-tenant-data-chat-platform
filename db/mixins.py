@@ -1,8 +1,7 @@
 import uuid
 from datetime import datetime
-from typing import Any
 
-from sqlalchemy import DateTime, MetaData, func
+from sqlalchemy import DateTime, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -36,7 +35,3 @@ class TimestampWithoutUpdateMixin:
         nullable=False,
         server_default=func.now(),
     )
-
-
-type_metadata: MetaData | None = None
-json_default: dict[str, Any] = {}
