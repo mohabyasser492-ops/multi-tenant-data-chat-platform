@@ -4,6 +4,11 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class LoginRequest(BaseModel):
+    tenant_code: str = Field(
+        min_length=2,
+        max_length=100,
+        examples=["demo"],
+    )
     email: EmailStr
     password: str = Field(
         min_length=8,
