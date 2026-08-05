@@ -1,0 +1,58 @@
+# FastAPI application
+fastapi
+uvicorn[standard]
+python-multipart
+email-validator
+sse-starlette
+
+# Configuration and validation
+pydantic
+pydantic-settings
+
+# Database and migrations
+sqlalchemy
+alembic
+asyncpg
+psycopg[binary]
+pgvector
+
+# Authentication and security
+python-jose[cryptography]
+passlib[argon2]
+cryptography
+
+# SQL parsing and validation
+sqlglot
+
+# Background jobs and cache
+redis
+celery
+
+# Object storage
+minio
+
+# Agent orchestration and HTTP
+langgraph
+httpx
+tenacity
+
+# Document processing
+pypdf
+python-docx
+openpyxl
+pandas
+
+# Embeddings and numerical processing
+sentence-transformers
+numpy
+
+# Logging
+structlog
+
+# Testing
+pytest
+pytest-asyncio
+pytest-cov
+
+# Code quality
+ruff
