@@ -1,0 +1,73 @@
+name: multi-tenant-data-chat
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: data-chat-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - data_chat_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: data-chat-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - data_chat_network
+
+  minio:
+    image: minio/minio:latest
+    container_name: data-chat-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - data_chat_network
+
+volumes:
+  postgres_data:
+    name: data-chat-postgres-data
+  redis_data:
+    name: data-chat-redis-data
+  minio_data:
+    name: data-chat-minio-data
+
+networks:
+  data_chat_network:
+    name: data-chat-network
+    driver: bridge
