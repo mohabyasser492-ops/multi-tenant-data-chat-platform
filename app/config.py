@@ -80,15 +80,16 @@ class Settings(BaseSettings):
             return f"/{value}"
         return value
 
-    @field_validator("allowed_extensions", mode="before")
-    @classmethod
-    def parse_allowed_extensions(
-        cls,
-        value: str | list[str],
-    ) -> list[str]:
-        if isinstance(value, str):
-            return [item.strip().lower() for item in value.split(",") if item.strip()]
-        return value
+    # Initial tenant administrator
+    initial_tenant_name: str = "Demo Company"
+    initial_tenant_code: str = "demo"
+    initial_admin_email: str = "admin@example.com"
+    initial_admin_full_name: str = "Platform Administrator"
+    initial_admin_password: str = Field(
+        default="replace_with_a_strong_password",
+        min_length=8,
+        max_length=128,
+    )
 
 
 @lru_cache
