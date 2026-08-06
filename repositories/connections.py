@@ -22,6 +22,22 @@ async def get_connection_by_name(
     return result.scalar_one_or_none()
 
 
+async def get_connection_by_id(
+    *,
+    session: AsyncSession,
+    tenant_id: uuid.UUID,
+    connection_id: uuid.UUID,
+) -> DatabaseConnection | None:
+    result = await session.execute(
+        select(DatabaseConnection).where(
+            DatabaseConnection.id == connection_id,
+            DatabaseConnection.tenant_id == tenant_id,
+        )
+    )
+
+    return result.scalar_one_or_none()
+
+
 async def create_connection(
     *,
     session: AsyncSession,
@@ -57,7 +73,27 @@ async def list_connections(
         )
     )
 
-    return (
-        list(items_result.scalars().all()),
-        total_result.scalar_one(),
-    )
+    items = list(items_result.scalars().all())
+    total = total_result.scalar_one()
+
+    return items, total
+
+
+async def save_connection(
+    *,
+    session: AsyncSession,
+    connection: DatabaseConnection,
+) -> DatabaseConnection:
+    await session.commit()
+    await session.refresh(connection)
+
+    return connection
+
+
+async def delete_connection(
+    *,
+    session: AsyncSession,
+    connection: DatabaseConnection,
+) -> None:
+    await session.delete(connection)
+    await session.commit()
