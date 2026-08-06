@@ -678,24 +678,6 @@ Submission screenshots are stored in:
 docs/screenshots/
 ```
 
-Recommended evidence:
-
-1. Docker services running
-2. Swagger endpoint overview
-3. Successful authentication with token values hidden
-4. Database connection test
-5. Schema synchronization
-6. Masked secure-query result
-7. Destructive SQL blocked
-8. Document upload
-9. Document processing and embedding
-10. Semantic vector search
-11. Document chat with citation
-12. Hybrid chat with database and document citations
-13. Sanitized audit logs
-14. Complete automated test result
-15. Clean Git status
-
 ## Known Limitations
 
 - PostgreSQL is the fully implemented runtime database connector.
