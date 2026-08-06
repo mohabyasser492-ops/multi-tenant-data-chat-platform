@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.conversation import (
     Message,
     MessageCitation,
+    QueryExecution,
 )
 
 
@@ -121,3 +122,45 @@ async def list_message_citations(
         ).append(citation)
 
     return citations_by_message
+
+
+async def create_database_message_exchange(
+    *,
+    session: AsyncSession,
+    user_message: Message,
+    assistant_message: Message,
+    query_execution: "QueryExecution",
+    citation: MessageCitation,
+) -> tuple[
+    Message,
+    Message,
+    "QueryExecution",
+    MessageCitation,
+]:
+    session.add(user_message)
+    await session.flush()
+
+    session.add(assistant_message)
+    await session.flush()
+
+    query_execution.message_id = assistant_message.id
+    session.add(query_execution)
+    await session.flush()
+
+    citation.message_id = assistant_message.id
+    citation.query_execution_id = query_execution.id
+    session.add(citation)
+
+    await session.commit()
+
+    await session.refresh(user_message)
+    await session.refresh(assistant_message)
+    await session.refresh(query_execution)
+    await session.refresh(citation)
+
+    return (
+        user_message,
+        assistant_message,
+        query_execution,
+        citation,
+    )
