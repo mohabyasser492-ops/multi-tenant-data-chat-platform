@@ -14,6 +14,9 @@ from api.routes.knowledge_bases import (
 )
 from api.routes.permissions import router as permissions_router
 from api.routes.queries import router as queries_router
+from api.routes.retrieval import (
+    router as retrieval_router,
+)
 
 api_router = APIRouter()
 
@@ -24,4 +27,5 @@ api_router.include_router(permissions_router)
 api_router.include_router(queries_router)
 api_router.include_router(knowledge_bases_router)
 api_router.include_router(documents_router)
+api_router.include_router(retrieval_router)
 api_router.include_router(health_router)

@@ -176,3 +176,51 @@ async def save_document_embeddings(
     await session.refresh(document)
 
     return document
+
+
+async def search_document_chunks(
+    *,
+    session: AsyncSession,
+    tenant_id: uuid.UUID,
+    knowledge_base_id: uuid.UUID,
+    query_embedding: list[float],
+    top_k: int,
+) -> list[
+    tuple[
+        DocumentChunk,
+        Document,
+        float,
+    ]
+]:
+    cosine_distance = DocumentChunk.embedding.cosine_distance(query_embedding)
+
+    result = await session.execute(
+        select(
+            DocumentChunk,
+            Document,
+            cosine_distance.label("cosine_distance"),
+        )
+        .join(
+            Document,
+            DocumentChunk.document_id == Document.id,
+        )
+        .where(
+            DocumentChunk.tenant_id == tenant_id,
+            DocumentChunk.knowledge_base_id == knowledge_base_id,
+            Document.tenant_id == tenant_id,
+            Document.knowledge_base_id == knowledge_base_id,
+            Document.status == "completed",
+            DocumentChunk.embedding.is_not(None),
+        )
+        .order_by(cosine_distance)
+        .limit(top_k)
+    )
+
+    return [
+        (
+            chunk,
+            document,
+            float(distance),
+        )
+        for chunk, document, distance in result.all()
+    ]
