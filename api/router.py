@@ -1,6 +1,9 @@
 from fastapi import APIRouter
 
 from api.routes.auth import router as auth_router
+from api.routes.conversations import (
+    router as conversations_router,
+)
 from api.routes.database_connections import (
     router as database_connections_router,
 )
@@ -28,4 +31,5 @@ api_router.include_router(queries_router)
 api_router.include_router(knowledge_bases_router)
 api_router.include_router(documents_router)
 api_router.include_router(retrieval_router)
+api_router.include_router(conversations_router)
 api_router.include_router(health_router)
