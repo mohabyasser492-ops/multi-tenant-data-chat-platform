@@ -15,6 +15,7 @@ from api.routes.health import router as health_router
 from api.routes.knowledge_bases import (
     router as knowledge_bases_router,
 )
+from api.routes.messages import router as messages_router
 from api.routes.permissions import router as permissions_router
 from api.routes.queries import router as queries_router
 from api.routes.retrieval import (
@@ -32,4 +33,5 @@ api_router.include_router(knowledge_bases_router)
 api_router.include_router(documents_router)
 api_router.include_router(retrieval_router)
 api_router.include_router(conversations_router)
+api_router.include_router(messages_router)
 api_router.include_router(health_router)
