@@ -9,6 +9,7 @@ from schemas.database_connection import (
     DatabaseConnectionCreate,
     DatabaseConnectionListResponse,
     DatabaseConnectionResponse,
+    DatabaseConnectionTestResponse,
     DatabaseConnectionUpdate,
 )
 from services.database.connection_service import (
@@ -19,7 +20,11 @@ from services.database.connection_service import (
     get_database_connection,
     list_database_connections,
     remove_database_connection,
+    test_stored_database_connection,
     update_database_connection,
+)
+from services.database.connection_tester import (
+    UnsupportedDatabaseTypeError,
 )
 
 router = APIRouter(
@@ -91,6 +96,54 @@ async def list_connections_endpoint(
             for connection in connections
         ],
         total=total,
+    )
+
+
+@router.post(
+    "/{connection_id}/test",
+    response_model=DatabaseConnectionTestResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Test a stored database connection",
+)
+async def test_connection_endpoint(
+    connection_id: uuid.UUID,
+    session: DatabaseSession,
+    current_user: CurrentUser,
+) -> DatabaseConnectionTestResponse:
+    try:
+        connection, result = await test_stored_database_connection(
+            session=session,
+            current_user=current_user,
+            connection_id=connection_id,
+        )
+    except DatabaseConnectionNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Database connection was not found.",
+        ) from exc
+    except TenantAdministratorRequiredError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tenant administrator access is required.",
+        ) from exc
+    except UnsupportedDatabaseTypeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail=("Connection testing is not available for this database type."),
+        ) from exc
+
+    if connection.last_tested_at is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Connection test timestamp was not recorded.",
+        )
+
+    return DatabaseConnectionTestResponse(
+        connection_id=connection.id,
+        success=result.success,
+        status=connection.status,
+        message=result.message,
+        tested_at=connection.last_tested_at,
     )
 
 

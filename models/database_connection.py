@@ -5,6 +5,7 @@ from typing import Any
 from sqlalchemy import (
     JSON,
     Boolean,
+    DateTime,
     ForeignKey,
     Integer,
     String,
@@ -105,6 +106,7 @@ class DatabaseConnection(
         server_default="pending",
     )
     last_tested_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
         nullable=True,
     )
     last_test_message: Mapped[str | None] = mapped_column(
@@ -119,6 +121,7 @@ class DatabaseConnection(
         server_default="pending",
     )
     last_schema_sync_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
         nullable=True,
     )
 

@@ -1,7 +1,9 @@
 import uuid
+from datetime import UTC, datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from core.encryption import encrypt_secret
 from models.database_connection import DatabaseConnection
 from models.user import User
@@ -16,6 +18,11 @@ from repositories.connections import (
 from schemas.database_connection import (
     DatabaseConnectionCreate,
     DatabaseConnectionUpdate,
+)
+from services.database.connection_tester import (
+    ConnectionTestResult,
+    UnsupportedDatabaseTypeError,
+    test_database_connection,
 )
 
 
@@ -210,3 +217,50 @@ async def remove_database_connection(
         session=session,
         connection=connection,
     )
+
+
+async def test_stored_database_connection(
+    *,
+    session: AsyncSession,
+    current_user: User,
+    connection_id: uuid.UUID,
+) -> tuple[DatabaseConnection, ConnectionTestResult]:
+    require_tenant_administrator(current_user)
+
+    connection = await get_database_connection(
+        session=session,
+        current_user=current_user,
+        connection_id=connection_id,
+    )
+
+    tested_at = datetime.now(UTC)
+
+    try:
+        result = await test_database_connection(
+            connection,
+            timeout_seconds=settings.sql_timeout_seconds,
+        )
+    except UnsupportedDatabaseTypeError:
+        connection.status = "failed"
+        connection.last_tested_at = tested_at
+        connection.last_test_message = (
+            "Connection testing is not available for this database type."
+        )
+
+        await save_connection(
+            session=session,
+            connection=connection,
+        )
+
+        raise
+
+    connection.status = "connected" if result.success else "failed"
+    connection.last_tested_at = tested_at
+    connection.last_test_message = result.message
+
+    saved_connection = await save_connection(
+        session=session,
+        connection=connection,
+    )
+
+    return saved_connection, result
