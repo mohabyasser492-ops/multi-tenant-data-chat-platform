@@ -1,7 +1,7 @@
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,25 +11,28 @@ from db.session import get_db_session
 from models.tenant import Tenant
 from models.user import User
 
-oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="/api/auth/login",
+bearer_scheme = HTTPBearer(
+    scheme_name="Bearer Authentication",
+    description="Enter the access token returned by POST /api/auth/login.",
 )
+
+BearerCredentials = Annotated[
+    HTTPAuthorizationCredentials,
+    Depends(bearer_scheme),
+]
 
 DatabaseSession = Annotated[
     AsyncSession,
     Depends(get_db_session),
 ]
 
-AccessToken = Annotated[
-    str,
-    Depends(oauth2_scheme),
-]
-
 
 async def get_current_user(
-    token: AccessToken,
+    credentials: BearerCredentials,
     session: DatabaseSession,
 ) -> User:
+    token = credentials.credentials
+
     try:
         payload = decode_token(
             token,
