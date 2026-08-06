@@ -33,7 +33,6 @@ api_router = APIRouter()
 
 api_router.include_router(auth_router)
 api_router.include_router(database_connections_router)
-api_router.include_router(audit_logs_router)
 api_router.include_router(database_schema_router)
 api_router.include_router(permissions_router)
 api_router.include_router(queries_router)
