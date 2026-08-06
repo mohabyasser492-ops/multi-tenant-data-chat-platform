@@ -1,3 +1,10 @@
+from models.conversation import (
+    AuditLog,
+    Conversation,
+    Message,
+    MessageCitation,
+    QueryExecution,
+)
 from models.database_connection import DatabaseConnection
 from models.database_schema import (
     DatabaseColumn,
@@ -18,7 +25,9 @@ from models.tenant import Tenant
 from models.user import User
 
 __all__ = [
+    "AuditLog",
     "ColumnPermission",
+    "Conversation",
     "DatabaseColumn",
     "DatabaseConnection",
     "DatabaseSchema",
@@ -26,6 +35,9 @@ __all__ = [
     "Document",
     "DocumentChunk",
     "KnowledgeBase",
+    "Message",
+    "MessageCitation",
+    "QueryExecution",
     "Role",
     "TablePermission",
     "Tenant",
