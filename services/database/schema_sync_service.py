@@ -58,13 +58,11 @@ async def synchronize_database_schema(
             timeout_seconds=settings.sql_timeout_seconds,
         )
 
-        schema_count, table_count, column_count = (
-            await cache_discovered_metadata(
-                session=session,
-                tenant_id=current_user.tenant_id,
-                connection_id=connection.id,
-                discovery=discovery,
-            )
+        schema_count, table_count, column_count = await cache_discovered_metadata(
+            session=session,
+            tenant_id=current_user.tenant_id,
+            connection_id=connection.id,
+            discovery=discovery,
         )
     except SchemaDiscoveryError:
         connection.schema_sync_status = "failed"

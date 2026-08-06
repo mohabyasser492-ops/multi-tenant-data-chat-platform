@@ -63,19 +63,11 @@ def test_serialize_uuid() -> None:
 def test_serialize_datetime() -> None:
     value = datetime.now(UTC)
 
-    assert (
-        serialize_database_value(value)
-        == value.isoformat()
-    )
+    assert serialize_database_value(value) == value.isoformat()
 
 
 def test_serialize_decimal() -> None:
-    assert (
-        serialize_database_value(
-            Decimal("123.45")
-        )
-        == "123.45"
-    )
+    assert serialize_database_value(Decimal("123.45")) == "123.45"
 
 
 def test_full_mask() -> None:
@@ -90,9 +82,7 @@ def test_partial_mask() -> None:
 
 
 def test_email_mask() -> None:
-    masked = mask_email(
-        "admin@example.com"
-    )
+    masked = mask_email("admin@example.com")
 
     assert masked is not None
     assert masked.endswith("@example.com")
@@ -120,9 +110,7 @@ def test_apply_unknown_mask_is_rejected() -> None:
 
 
 def test_column_masks_are_created_from_permissions() -> None:
-    masks = get_column_masks(
-        build_allowed_schema()
-    )
+    masks = get_column_masks(build_allowed_schema())
 
     assert masks == {
         "email": "email",
@@ -144,9 +132,7 @@ def test_result_size_is_measured_in_bytes() -> None:
 
 def test_nested_values_are_serialized() -> None:
     value = {
-        "id": uuid.UUID(
-            "11111111-1111-1111-1111-111111111111"
-        ),
+        "id": uuid.UUID("11111111-1111-1111-1111-111111111111"),
         "amounts": [
             Decimal("10.50"),
             Decimal("20.75"),
@@ -156,9 +142,7 @@ def test_nested_values_are_serialized() -> None:
     serialized = serialize_database_value(value)
 
     assert serialized == {
-        "id": (
-            "11111111-1111-1111-1111-111111111111"
-        ),
+        "id": ("11111111-1111-1111-1111-111111111111"),
         "amounts": [
             "10.50",
             "20.75",
