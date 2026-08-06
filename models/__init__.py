@@ -4,6 +4,11 @@ from models.database_schema import (
     DatabaseSchema,
     DatabaseTable,
 )
+from models.knowledge_base import (
+    Document,
+    DocumentChunk,
+    KnowledgeBase,
+)
 from models.role import Role, UserRole
 from models.table_permission import (
     ColumnPermission,
@@ -18,6 +23,9 @@ __all__ = [
     "DatabaseConnection",
     "DatabaseSchema",
     "DatabaseTable",
+    "Document",
+    "DocumentChunk",
+    "KnowledgeBase",
     "Role",
     "TablePermission",
     "Tenant",
