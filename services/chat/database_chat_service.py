@@ -18,6 +18,9 @@ from repositories.messages import (
 )
 from schemas.database_chat import DatabaseMessageCreate
 from schemas.message import MessageResponse
+from services.audit_service import (
+    record_audit_event,
+)
 from services.chat.conversation_service import (
     get_conversation,
 )
@@ -241,7 +244,23 @@ async def create_database_message(
     except SQLAlchemyError:
         await session.rollback()
         raise
-
+        await record_audit_event(
+            session=session,
+            tenant_id=current_user.tenant_id,
+            user_id=current_user.id,
+            action="database_chat.query",
+            resource_type="conversation",
+            resource_id=conversation.id,
+            outcome="success",
+            metadata={
+                "connection_id": str(conversation.connection_id),
+                "query_execution_id": str(query_execution.id),
+                "referenced_tables": (security.referenced_tables),
+                "referenced_columns": (security.referenced_columns),
+                "row_count": execution.row_count,
+                "row_filters_applied": (security.row_filters_applied),
+            },
+        )
     return DatabaseMessageExchange(
         user_message=message_to_response(
             message=saved_user_message,

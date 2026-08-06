@@ -17,6 +17,7 @@ from repositories.messages import (
 )
 from schemas.hybrid_chat import HybridMessageCreate
 from schemas.message import MessageResponse
+from services.audit_service import record_audit_event
 from services.chat.conversation_service import (
     get_conversation,
 )
@@ -325,7 +326,7 @@ async def create_hybrid_message(
     (
         saved_user_message,
         saved_assistant_message,
-        _,
+        saved_query_execution,
         saved_citations,
     ) = await create_hybrid_message_exchange(
         session=session,
@@ -333,6 +334,27 @@ async def create_hybrid_message(
         assistant_message=assistant_message,
         query_execution=query_execution,
         citations=citations,
+    )
+
+    await record_audit_event(
+        session=session,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.id,
+        action="hybrid_chat.query",
+        resource_type="conversation",
+        resource_id=conversation.id,
+        outcome="success",
+        metadata={
+            "connection_id": str(conversation.connection_id),
+            "knowledge_base_id": str(conversation.knowledge_base_id),
+            "query_execution_id": str(saved_query_execution.id),
+            "referenced_tables": (saved_query_execution.referenced_tables),
+            "referenced_columns": (saved_query_execution.referenced_columns),
+            "row_count": (saved_query_execution.row_count),
+            "applied_limit": (saved_query_execution.applied_limit),
+            "row_filters_applied": (saved_query_execution.row_filters_applied),
+            "retrieved_chunk_count": len(matches),
+        },
     )
 
     return HybridMessageExchange(

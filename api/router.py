@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from api.routes.audit_logs import router as audit_logs_router
 from api.routes.auth import router as auth_router
 from api.routes.conversations import (
     router as conversations_router,
@@ -32,6 +33,7 @@ api_router = APIRouter()
 
 api_router.include_router(auth_router)
 api_router.include_router(database_connections_router)
+api_router.include_router(audit_logs_router)
 api_router.include_router(database_schema_router)
 api_router.include_router(permissions_router)
 api_router.include_router(queries_router)
@@ -42,4 +44,5 @@ api_router.include_router(conversations_router)
 api_router.include_router(messages_router)
 api_router.include_router(database_chat_router)
 api_router.include_router(hybrid_chat_router)
+api_router.include_router(audit_logs_router)
 api_router.include_router(health_router)
