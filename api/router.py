@@ -15,6 +15,9 @@ from api.routes.database_schema import (
 )
 from api.routes.documents import router as documents_router
 from api.routes.health import router as health_router
+from api.routes.hybrid_chat import (
+    router as hybrid_chat_router,
+)
 from api.routes.knowledge_bases import (
     router as knowledge_bases_router,
 )
@@ -38,4 +41,5 @@ api_router.include_router(retrieval_router)
 api_router.include_router(conversations_router)
 api_router.include_router(messages_router)
 api_router.include_router(database_chat_router)
+api_router.include_router(hybrid_chat_router)
 api_router.include_router(health_router)

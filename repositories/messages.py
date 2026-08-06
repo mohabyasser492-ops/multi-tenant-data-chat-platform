@@ -164,3 +164,49 @@ async def create_database_message_exchange(
         query_execution,
         citation,
     )
+async def create_hybrid_message_exchange(
+    *,
+    session: AsyncSession,
+    user_message: Message,
+    assistant_message: Message,
+    query_execution: QueryExecution,
+    citations: list[MessageCitation],
+) -> tuple[
+    Message,
+    Message,
+    QueryExecution,
+    list[MessageCitation],
+]:
+    session.add(user_message)
+    await session.flush()
+
+    session.add(assistant_message)
+    await session.flush()
+
+    query_execution.message_id = assistant_message.id
+    session.add(query_execution)
+    await session.flush()
+
+    for citation in citations:
+        citation.message_id = assistant_message.id
+
+        if citation.citation_type == "database":
+            citation.query_execution_id = query_execution.id
+
+        session.add(citation)
+
+    await session.commit()
+
+    await session.refresh(user_message)
+    await session.refresh(assistant_message)
+    await session.refresh(query_execution)
+
+    for citation in citations:
+        await session.refresh(citation)
+
+    return (
+        user_message,
+        assistant_message,
+        query_execution,
+        citations,
+    )
