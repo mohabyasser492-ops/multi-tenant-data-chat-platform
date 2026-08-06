@@ -1,9 +1,12 @@
 import uuid
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.knowledge_base import Document
+from models.knowledge_base import (
+    Document,
+    DocumentChunk,
+)
 
 
 async def get_document_by_checksum(
@@ -93,3 +96,48 @@ async def delete_document_record(
 ) -> None:
     await session.delete(document)
     await session.commit()
+
+
+async def save_document_record(
+    *,
+    session: AsyncSession,
+    document: Document,
+) -> Document:
+    await session.commit()
+    await session.refresh(document)
+
+    return document
+
+
+async def replace_document_chunks(
+    *,
+    session: AsyncSession,
+    document: Document,
+    chunks: list[DocumentChunk],
+) -> None:
+    await session.execute(
+        delete(DocumentChunk).where(
+            DocumentChunk.tenant_id == document.tenant_id,
+            DocumentChunk.knowledge_base_id == document.knowledge_base_id,
+            DocumentChunk.document_id == document.id,
+        )
+    )
+
+    session.add_all(chunks)
+    await session.commit()
+
+
+async def count_document_chunks(
+    *,
+    session: AsyncSession,
+    tenant_id: uuid.UUID,
+    document_id: uuid.UUID,
+) -> int:
+    result = await session.execute(
+        select(func.count(DocumentChunk.id)).where(
+            DocumentChunk.tenant_id == tenant_id,
+            DocumentChunk.document_id == document_id,
+        )
+    )
+
+    return result.scalar_one()

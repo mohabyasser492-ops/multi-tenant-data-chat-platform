@@ -16,8 +16,16 @@ from schemas.document import (
     DocumentListResponse,
     DocumentResponse,
 )
+from schemas.document_processing import (
+    DocumentProcessingResponse,
+)
 from services.database.connection_service import (
     TenantAdministratorRequiredError,
+)
+from services.document.document_processor import (
+    DocumentNotFoundError,
+    DocumentProcessingError,
+    process_document,
 )
 from services.document.document_service import (
     DuplicateDocumentError,
@@ -125,4 +133,53 @@ async def list_documents_endpoint(
     return DocumentListResponse(
         items=[DocumentResponse.model_validate(document) for document in documents],
         total=total,
+    )
+
+
+@router.post(
+    "/{knowledge_base_id}/documents/{document_id}/process",
+    response_model=DocumentProcessingResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Extract and chunk an uploaded document",
+)
+async def process_document_endpoint(
+    knowledge_base_id: uuid.UUID,
+    document_id: uuid.UUID,
+    session: DatabaseSession,
+    current_user: CurrentUser,
+) -> DocumentProcessingResponse:
+    try:
+        document = await process_document(
+            session=session,
+            current_user=current_user,
+            knowledge_base_id=knowledge_base_id,
+            document_id=document_id,
+        )
+    except TenantAdministratorRequiredError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tenant administrator access is required.",
+        ) from exc
+    except KnowledgeBaseNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Knowledge base was not found.",
+        ) from exc
+    except DocumentNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document was not found.",
+        ) from exc
+    except DocumentProcessingError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="The document could not be processed.",
+        ) from exc
+
+    return DocumentProcessingResponse(
+        document_id=document.id,
+        status=document.status,
+        page_count=document.page_count,
+        chunk_count=document.chunk_count,
+        message=(document.processing_message or "Document processing completed."),
     )
