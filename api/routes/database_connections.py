@@ -12,6 +12,7 @@ from schemas.database_connection import (
     DatabaseConnectionTestResponse,
     DatabaseConnectionUpdate,
 )
+from schemas.database_schema import SchemaSyncResponse
 from services.database.connection_service import (
     DatabaseConnectionNotFoundError,
     DuplicateConnectionNameError,
@@ -25,6 +26,10 @@ from services.database.connection_service import (
 )
 from services.database.connection_tester import (
     UnsupportedDatabaseTypeError,
+)
+from services.database.schema_discovery import SchemaDiscoveryError
+from services.database.schema_sync_service import (
+    synchronize_database_schema,
 )
 
 router = APIRouter(
@@ -144,6 +149,49 @@ async def test_connection_endpoint(
         status=connection.status,
         message=result.message,
         tested_at=connection.last_tested_at,
+    )
+
+
+@router.post(
+    "/{connection_id}/sync-schema",
+    response_model=SchemaSyncResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Discover and cache database schema metadata",
+)
+async def sync_schema_endpoint(
+    connection_id: uuid.UUID,
+    session: DatabaseSession,
+    current_user: CurrentUser,
+) -> SchemaSyncResponse:
+    try:
+        result = await synchronize_database_schema(
+            session=session,
+            current_user=current_user,
+            connection_id=connection_id,
+        )
+    except DatabaseConnectionNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Database connection was not found.",
+        ) from exc
+    except TenantAdministratorRequiredError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tenant administrator access is required.",
+        ) from exc
+    except SchemaDiscoveryError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Database schema discovery failed.",
+        ) from exc
+
+    return SchemaSyncResponse(
+        connection_id=result.connection.id,
+        status=result.connection.schema_sync_status,
+        schema_count=result.schema_count,
+        table_count=result.table_count,
+        column_count=result.column_count,
+        synchronized_at=result.synchronized_at,
     )
 
 
