@@ -11,16 +11,24 @@ from fastapi import (
 )
 from sqlalchemy.exc import IntegrityError
 
+from app.config import settings
 from app.dependencies import CurrentUser, DatabaseSession
 from schemas.document import (
     DocumentListResponse,
     DocumentResponse,
+)
+from schemas.document_embedding import (
+    DocumentEmbeddingResponse,
 )
 from schemas.document_processing import (
     DocumentProcessingResponse,
 )
 from services.database.connection_service import (
     TenantAdministratorRequiredError,
+)
+from services.document.document_embedding_service import (
+    DocumentEmbeddingError,
+    embed_document_chunks,
 )
 from services.document.document_processor import (
     DocumentNotFoundError,
@@ -182,4 +190,55 @@ async def process_document_endpoint(
         page_count=document.page_count,
         chunk_count=document.chunk_count,
         message=(document.processing_message or "Document processing completed."),
+    )
+
+
+@router.post(
+    "/{knowledge_base_id}/documents/{document_id}/embed",
+    response_model=DocumentEmbeddingResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Generate embeddings for document chunks",
+)
+async def embed_document_endpoint(
+    knowledge_base_id: uuid.UUID,
+    document_id: uuid.UUID,
+    session: DatabaseSession,
+    current_user: CurrentUser,
+) -> DocumentEmbeddingResponse:
+    try:
+        document = await embed_document_chunks(
+            session=session,
+            current_user=current_user,
+            knowledge_base_id=knowledge_base_id,
+            document_id=document_id,
+        )
+    except TenantAdministratorRequiredError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tenant administrator access is required.",
+        ) from exc
+    except KnowledgeBaseNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Knowledge base was not found.",
+        ) from exc
+    except DocumentNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document was not found.",
+        ) from exc
+    except DocumentEmbeddingError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+
+    return DocumentEmbeddingResponse(
+        document_id=document.id,
+        status=document.status,
+        chunk_count=document.chunk_count,
+        embedded_chunk_count=document.chunk_count,
+        embedding_model=settings.embedding_model,
+        embedding_dimension=settings.embedding_dimension,
+        message=(document.processing_message or "Document embeddings were generated."),
     )

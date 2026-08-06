@@ -1,5 +1,6 @@
 import uuid
 
+from certifi import where
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -141,3 +142,37 @@ async def count_document_chunks(
     )
 
     return result.scalar_one()
+
+
+async def list_document_chunks(
+    *,
+    session: AsyncSession,
+    tenant_id: uuid.UUID,
+    knowledge_base_id: uuid.UUID,
+    document_id: uuid.UUID,
+) -> list[DocumentChunk]:
+    result = await select(DocumentChunk)
+    where(
+        DocumentChunk.tenant_id == tenant_id,
+        DocumentChunk.knowledge_base_id == knowledge_base_id,
+        DocumentChunk.document_id == document_id,
+    ).order_by(DocumentChunk.chunk_index)
+
+    return list(result.scalars().all())
+
+
+async def save_document_embeddings(
+    *,
+    session: AsyncSession,
+    document: Document,
+    chunks: list[DocumentChunk],
+) -> Document:
+    for chunk in chunks:
+        session.add(chunk)
+
+    session.add(document)
+
+    await session.commit()
+    await session.refresh(document)
+
+    return document
